@@ -1,11 +1,13 @@
-extends CharacterBody3D
+extends RigidBody3D
 
 class_name Player
 
-const SPEED = 5.0
-const JUMP_VELOCITY = 4.5
-const SLOWER_FACTOR = 4.0
-const SPRINTING_SPEED = 2
+var velocity: Vector3
+var on_ground = false
+const SPEED = 20.0
+const JUMP_FORCE = 5.0
+const SLOWER_FACTOR = 9.0
+const SPRINTING_SPEED = 1.5
 @export var senst = 50
 const SENST_MULT = 0.0001
 @export var pitch_lock = 80
@@ -22,16 +24,18 @@ var sprinting = false
 
 @onready var pickuper = $Orientation/Camera3D/Pickuper
 @onready var pickup_pos = $Orientation/Camera3D/PickupPos
-var has_pickable = false
+var cur_pickable: Pickable = null
+
+var initl_lin_damp = linear_damp
 
 func Pickup_pickable(pickable: Pickable):
 	pickable.gravity_scale = 0.0
-	has_pickable = true
+	cur_pickable = pickable
 	pickable.reparent(self)
 	
 func Drop_pickable(pickable: Pickable):
 	pickable.gravity_scale = pickable.initl_grav_scl
-	has_pickable = false
+	cur_pickable = null
 	pickable.reparent(pickable.initl_parent)
 
 func _unhandled_input(event):
@@ -50,20 +54,20 @@ func _unhandled_input(event):
 		print(sprinting)
 		sprinting = not sprinting
 	if event is InputEventKey and pickuper.is_colliding() and event.is_action_pressed("pickup_or_drop"):
-		if not has_pickable: Pickup_pickable(pickuper.get_collider())
+		if not cur_pickable: Pickup_pickable(pickuper.get_collider())
 		else: Drop_pickable(pickuper.get_collider())
 
-# Get the gravity from the project settings to be synced with RigidBody nodes.
-var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
-
 func _physics_process(delta):
-	# Add the gravity.
-	if not is_on_floor():
-		velocity.y -= gravity * delta
+	if $GroundCheck.is_colliding() and $GroundCheck.get_collider().is_in_group("Ground"):
+		on_ground = true
+	else:
+		on_ground = false
 
+	linear_damp = initl_lin_damp if on_ground else 0.0
+	
 	# Handle jump.
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = JUMP_VELOCITY
+	if Input.is_action_just_pressed("jump") and on_ground:
+		apply_central_impulse(JUMP_FORCE * mass * Vector3.UP)
 
 	# Get the input direction and handle the movement/deceleration.
 	# As good practice, you should replace UI actions with custom gameplay actions.
@@ -71,20 +75,21 @@ func _physics_process(delta):
 	var direction = (orient.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var sprint_val = SPRINTING_SPEED if sprinting else 1
 	if direction:
-		velocity.x = direction.x * SPEED * sprint_val
-		velocity.z = direction.z * SPEED * sprint_val
+		velocity.x = direction.x * SPEED * sprint_val * mass
+		velocity.z = direction.z * SPEED * sprint_val * mass
 		# bobbing
-		if is_on_floor():
+		if on_ground:
 			cam.position.y = initl_cam_y + sin(bob_timer * bobbing_speed/100 * sprint_val) * bobbing_amplitude
 			bob_timer += delta * 1000
 			stop_bobbing = true
 	else:
-		velocity.x = move_toward(velocity.x, 0, SPEED * delta * SLOWER_FACTOR / sprint_val)
-		velocity.z = move_toward(velocity.z, 0, SPEED * delta * SLOWER_FACTOR / sprint_val)
+		var slowing_delta = SPEED * delta * SLOWER_FACTOR * sprint_val * mass
+		velocity.x = move_toward(velocity.x, 0, slowing_delta)
+		velocity.z = move_toward(velocity.z, 0, slowing_delta)
 		# bobbing
 		if stop_bobbing:
 			cam.position.y = initl_cam_y
 			bob_timer = 0.0
 			stop_bobbing = false
 
-	move_and_slide()
+	apply_force(velocity, global_transform.origin)
