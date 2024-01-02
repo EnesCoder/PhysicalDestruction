@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://l0dhc06cv3rp"]
+[gd_scene load_steps=4 format=3 uid="uid://l0dhc06cv3rp"]
 
 [ext_resource type="Script" path="res://pickable.gd" id="1_x0wu6"]
 
@@ -7,12 +7,8 @@
 [sub_resource type="CylinderShape3D" id="CylinderShape3D_pfhbe"]
 height = 0.901353
 
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_xrahj"]
-height = 0.936823
-
 [node name="Pickable" type="RigidBody3D" groups=["Ground", "Pickable"]]
-collision_layer = 3
-mass = 2.0
+mass = 20.0
 script = ExtResource("1_x0wu6")
 
 [node name="Model" type="MeshInstance3D" parent="."]
@@ -21,10 +17,3 @@ mesh = SubResource("CylinderMesh_k64dr")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 shape = SubResource("CylinderShape3D_pfhbe")
-
-[node name="ColChecker" type="Area3D" parent="."]
-
-[node name="CollisionShape3D" type="CollisionShape3D" parent="ColChecker"]
-shape = SubResource("CylinderShape3D_xrahj")
-
-[connection signal="body_entered" from="ColChecker" to="." method="_on_col_checker_body_entered"]

@@ -6,11 +6,17 @@ var initl_grav_scl = gravity_scale
 @onready var initl_parent = get_parent()
 var rotation_offset = Vector3.ZERO
 @export var rotation_speed = 5
+var freeze_pos: Vector3 = Vector3.ZERO
+var freeze_rot: Vector3 = Vector3.ZERO
 
 func _process(delta):
 	if get_parent().is_in_group("Player"):
 		global_position = get_parent().pickup_pos.global_position
-		rotation = get_parent().cam.rotation + rotation_offset
+		global_rotation = get_parent().cam.global_rotation + rotation_offset
+	elif "Game" not in get_parent().name:
+		global_rotation = freeze_rot
+		position = freeze_pos
+		print(get_parent().name)
 		
 	var rot = rotation_speed * delta
 	if Input.is_key_label_pressed(KEY_R):

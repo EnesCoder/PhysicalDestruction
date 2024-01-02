@@ -33,12 +33,11 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
 [node name="Camera3D" type="Camera3D" parent="Orientation"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.644221, 0)
 
-[node name="Pickuper" type="RayCast3D" parent="Orientation/Camera3D"]
-target_position = Vector3(0, 0, -2)
-collision_mask = 2
-
 [node name="PickupPos" type="Node3D" parent="Orientation/Camera3D"]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -1.74)
+
+[node name="FrontCheck" type="RayCast3D" parent="Orientation/Camera3D"]
+target_position = Vector3(0, 0, -2)
 
 [node name="GroundCheck" type="RayCast3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.132571, 0)

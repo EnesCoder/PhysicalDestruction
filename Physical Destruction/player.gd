@@ -4,7 +4,7 @@ class_name Player
 
 var velocity: Vector3
 var on_ground = false
-const SPEED = 20.0
+const SPEED = 900.0
 const JUMP_FORCE = 5.0
 const SLOWER_FACTOR = 9.0
 const SPRINTING_SPEED = 1.5
@@ -22,29 +22,63 @@ var stop_bobbing = true
 
 var sprinting = false
 
-@onready var pickuper = $Orientation/Camera3D/Pickuper
 @onready var pickup_pos = $Orientation/Camera3D/PickupPos
 var cur_pickable: Pickable = null
 
 var initl_lin_damp = linear_damp
+@export var health = 100.0
+
+var freeze_candidate = null
+@onready var front_check = $Orientation/Camera3D/FrontCheck
 
 func Pickup_pickable(pickable: Pickable):
 	pickable.gravity_scale = 0.0
+	pickable.get_node("CollisionShape3D").disabled = true
 	cur_pickable = pickable
+	pickable.linear_velocity = Vector3.ZERO
+	pickable.angular_velocity = Vector3.ZERO
 	pickable.reparent(self)
 	
 func Drop_pickable(pickable: Pickable):
 	pickable.gravity_scale = pickable.initl_grav_scl
+	pickable.get_node("CollisionShape3D").disabled = false
 	cur_pickable = null
+	pickable.linear_velocity = Vector3.ZERO
+	pickable.angular_velocity = Vector3.ZERO
 	pickable.reparent(pickable.initl_parent)
 
+func Convert_static(what_to_convert: PhysicsBody3D):
+	var static_body = StaticBody3D.new()
+	for c in what_to_convert.get_children():
+		static_body.add_child(c.duplicate())
+	return static_body
+
+func Freeze(what_to_freeze):
+	if freeze_candidate:
+		var static_fc = Convert_static(freeze_candidate)
+		freeze_candidate.queue_free()
+		freeze_candidate = static_fc
+		var static_wtf = Convert_static(what_to_freeze)
+		what_to_freeze.queue_free()
+		what_to_freeze = static_wtf
+		get_parent().add_child(freeze_candidate)
+		get_parent().add_child(what_to_freeze)
+	else:
+		what_to_freeze = freeze_candidate
+	
+	#if freeze_candidate != null and freeze_candidate != what_to_freeze:
+	#	print(what_to_freeze.name)
+	#	if freeze_candidate is Pickable:
+	#		freeze_candidate.freeze_pos = what_to_freeze.to_local(freeze_candidate.global_position)
+	#		freeze_candidate.freeze_rot = freeze_candidate.global_rotation
+	#		freeze_candidate.gravity_scale = 0
+	#	freeze_candidate.reparent(what_to_freeze)
+	#	freeze_candidate = null
+	#else:
+	#	freeze_candidate = what_to_freeze
+
 func _unhandled_input(event):
-	# mouse and looking around
-	if event.is_action_pressed("focus"):
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	elif event.is_action_pressed("escape"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		
+	# looking around
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		orient.rotate_y(-event.relative.x * senst * SENST_MULT)
 		cam.rotate_x(-event.relative.y * senst * SENST_MULT)
@@ -53,9 +87,12 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.is_action_pressed("sprint_toggle"):
 		print(sprinting)
 		sprinting = not sprinting
-	if event is InputEventKey and pickuper.is_colliding() and event.is_action_pressed("pickup_or_drop"):
-		if not cur_pickable: Pickup_pickable(pickuper.get_collider())
-		else: Drop_pickable(pickuper.get_collider())
+	if event is InputEventKey and ((front_check.is_colliding() and front_check.get_collider() is Pickable) or cur_pickable) and event.is_action_pressed("pickup_or_drop"):
+		if not cur_pickable: Pickup_pickable(front_check.get_collider())
+		else: Drop_pickable(cur_pickable)
+	
+	if event is InputEventKey and event.is_action_released("freeze") and front_check.is_colliding():
+		Freeze(front_check.get_collider())
 
 func _physics_process(delta):
 	if $GroundCheck.is_colliding() and $GroundCheck.get_collider().is_in_group("Ground"):
@@ -75,8 +112,8 @@ func _physics_process(delta):
 	var direction = (orient.transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
 	var sprint_val = SPRINTING_SPEED if sprinting else 1
 	if direction:
-		velocity.x = direction.x * SPEED * sprint_val * mass
-		velocity.z = direction.z * SPEED * sprint_val * mass
+		velocity.x = direction.x * SPEED * sprint_val * mass * delta
+		velocity.z = direction.z * SPEED * sprint_val * mass * delta
 		# bobbing
 		if on_ground:
 			cam.position.y = initl_cam_y + sin(bob_timer * bobbing_speed/100 * sprint_val) * bobbing_amplitude
@@ -93,3 +130,6 @@ func _physics_process(delta):
 			stop_bobbing = false
 
 	apply_force(velocity, global_transform.origin)
+	
+func _process(delta):
+	if health <= 0.0: queue_free()

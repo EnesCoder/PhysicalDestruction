@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://ckk18g60kuhrk"]
+[gd_scene load_steps=7 format=3 uid="uid://ckk18g60kuhrk"]
 
 [ext_resource type="Script" path="res://entity.gd" id="1_myta4"]
 
@@ -10,7 +10,14 @@ material = SubResource("StandardMaterial3D_hm6vi")
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_3hidn"]
 
-[node name="Entity" type="CharacterBody3D" groups=["Entity"]]
+[sub_resource type="SphereShape3D" id="SphereShape3D_2o8xt"]
+radius = 0.678308
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_b7qkj"]
+radius = 0.502058
+height = 1.99799
+
+[node name="Entity" type="CharacterBody3D" groups=["Entity", "Ground"]]
 script = ExtResource("1_myta4")
 
 [node name="Model" type="MeshInstance3D" parent="."]
@@ -24,4 +31,18 @@ shape = SubResource("CapsuleShape3D_3hidn")
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
 navigation_layers = 3
 
+[node name="DamageRange" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DamageRange"]
+shape = SubResource("SphereShape3D_2o8xt")
+
+[node name="ColCheck" type="Area3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ColCheck"]
+shape = SubResource("CapsuleShape3D_b7qkj")
+
 [connection signal="target_reached" from="NavigationAgent3D" to="." method="_on_navigation_agent_3d_target_reached"]
+[connection signal="body_entered" from="DamageRange" to="." method="_on_damage_range_body_entered"]
+[connection signal="body_entered" from="ColCheck" to="." method="_on_col_check_body_entered"]
