@@ -44,3 +44,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.132571, 0)
 target_position = Vector3(0, -0.4, 0)
 collision_mask = 3
 debug_shape_custom_color = Color(0.737255, 0.737255, 0.737255, 1)
+
+[node name="PickableProps" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 0
+offset_right = 1152.0
+offset_bottom = 40.0
+
+[node name="GravityScale" type="Label" parent="PickableProps"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 23.0
+text = "Gravity Scale: 0"

@@ -28,8 +28,13 @@ var cur_pickable: Pickable = null
 var initl_lin_damp = linear_damp
 @export var health = 100.0
 
-var freeze_candidate = null
 @onready var front_check = $Orientation/Camera3D/FrontCheck
+
+@export var resize_amount = 5
+@export var gravity_modifier_amount = 1
+
+@export var throw_force_addition = 50
+var throw_force = 0.0
 
 func Pickup_pickable(pickable: Pickable):
 	pickable.gravity_scale = 0.0
@@ -46,36 +51,27 @@ func Drop_pickable(pickable: Pickable):
 	pickable.linear_velocity = Vector3.ZERO
 	pickable.angular_velocity = Vector3.ZERO
 	pickable.reparent(pickable.initl_parent)
-
-func Convert_static(what_to_convert: PhysicsBody3D):
-	var static_body = StaticBody3D.new()
-	for c in what_to_convert.get_children():
-		static_body.add_child(c.duplicate())
-	return static_body
+	print("well vello tello")
 
 func Freeze(what_to_freeze):
-	if freeze_candidate:
-		var static_fc = Convert_static(freeze_candidate)
-		freeze_candidate.queue_free()
-		freeze_candidate = static_fc
-		var static_wtf = Convert_static(what_to_freeze)
-		what_to_freeze.queue_free()
-		what_to_freeze = static_wtf
-		get_parent().add_child(freeze_candidate)
-		get_parent().add_child(what_to_freeze)
-	else:
-		what_to_freeze = freeze_candidate
+	var static_wtf = StaticBody3D.new()
+	for c in what_to_freeze.get_children():
+		static_wtf.add_child(c.duplicate())
+	get_parent().add_child(static_wtf)
+	static_wtf.global_position = what_to_freeze.global_position
+	static_wtf.global_rotation = what_to_freeze.global_rotation
+	what_to_freeze.queue_free()
+
+func Resize_pickable(pickable: Pickable, mult: float):
+	for c in pickable.get_children():
+		c.scale += Vector3.ONE * mult * resize_amount
+
+func Modify_pickable_gravscl(pickable: Pickable, mult: float):
+	pickable.initl_grav_scl += mult * gravity_modifier_amount
 	
-	#if freeze_candidate != null and freeze_candidate != what_to_freeze:
-	#	print(what_to_freeze.name)
-	#	if freeze_candidate is Pickable:
-	#		freeze_candidate.freeze_pos = what_to_freeze.to_local(freeze_candidate.global_position)
-	#		freeze_candidate.freeze_rot = freeze_candidate.global_rotation
-	#		freeze_candidate.gravity_scale = 0
-	#	freeze_candidate.reparent(what_to_freeze)
-	#	freeze_candidate = null
-	#else:
-	#	freeze_candidate = what_to_freeze
+func Throw_pickable(pickable: Pickable, force: Vector3):
+	Drop_pickable(pickable)
+	pickable.apply_central_impulse(force)
 
 func _unhandled_input(event):
 	# looking around
@@ -91,8 +87,12 @@ func _unhandled_input(event):
 		if not cur_pickable: Pickup_pickable(front_check.get_collider())
 		else: Drop_pickable(cur_pickable)
 	
-	if event is InputEventKey and event.is_action_released("freeze") and front_check.is_colliding():
+	if event is InputEventKey and event.is_action_pressed("freeze") and front_check.is_colliding():
 		Freeze(front_check.get_collider())
+
+	if event is InputEventKey and event.is_action_released("throw") and cur_pickable:
+		Throw_pickable(cur_pickable, (cur_pickable.position - cam.position) * throw_force)
+		throw_force = 0.0
 
 func _physics_process(delta):
 	if $GroundCheck.is_colliding() and $GroundCheck.get_collider().is_in_group("Ground"):
@@ -133,3 +133,22 @@ func _physics_process(delta):
 	
 func _process(delta):
 	if health <= 0.0: queue_free()
+	
+	if Input.is_action_pressed("throw") and cur_pickable:
+		throw_force += throw_force_addition * delta
+	
+	if cur_pickable:
+		$PickableProps.visible = true
+		$PickableProps/GravityScale.text = "Gravity Scale: " + str(cur_pickable.initl_grav_scl)
+		
+		if Input.is_action_pressed("grow"):
+			Resize_pickable(cur_pickable, delta)
+		if Input.is_action_pressed("shrink"):
+			Resize_pickable(cur_pickable, -delta)
+		
+		if Input.is_action_pressed("add_gravity"):
+			Modify_pickable_gravscl(cur_pickable, delta)
+		if Input.is_action_pressed("take_gravity"):
+			Modify_pickable_gravscl(cur_pickable, -delta)
+	else:
+		$PickableProps.visible = false
