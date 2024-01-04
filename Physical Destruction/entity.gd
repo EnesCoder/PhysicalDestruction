@@ -1,7 +1,7 @@
 extends CharacterBody3D
 
 class_name Entity
-
+	
 @onready var nav_ag: NavigationAgent3D = $NavigationAgent3D
 @export var speed = 1.0
 const movement_smoothnes = 1

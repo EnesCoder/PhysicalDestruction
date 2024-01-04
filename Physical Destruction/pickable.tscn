@@ -1,19 +1,18 @@
 [gd_scene load_steps=4 format=3 uid="uid://l0dhc06cv3rp"]
 
 [ext_resource type="Script" path="res://pickable.gd" id="1_x0wu6"]
+[ext_resource type="PackedScene" uid="uid://ttmewifke1px" path="res://Models/wotoofboto.blend" id="2_b1o0e"]
 
-[sub_resource type="CylinderMesh" id="CylinderMesh_k64dr"]
-
-[sub_resource type="CylinderShape3D" id="CylinderShape3D_pfhbe"]
-height = 0.901353
+[sub_resource type="BoxShape3D" id="BoxShape3D_mvfu3"]
+size = Vector3(0.324463, 0.601807, 0.274902)
 
 [node name="Pickable" type="RigidBody3D" groups=["Ground", "Pickable"]]
-mass = 20.0
+mass = 0.6
 script = ExtResource("1_x0wu6")
 
-[node name="Model" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.447452, 0, 0, 0, 1, 0, 0, 0)
-mesh = SubResource("CylinderMesh_k64dr")
+[node name="wotoofboto" parent="." instance=ExtResource("2_b1o0e")]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-shape = SubResource("CylinderShape3D_pfhbe")
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.27, -0.00219727)
+shape = SubResource("BoxShape3D_mvfu3")

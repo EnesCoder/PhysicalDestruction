@@ -31,9 +31,12 @@ var initl_lin_damp = linear_damp
 @onready var front_check = $Orientation/Camera3D/FrontCheck
 
 @export var resize_amount = 5
+@export var min_pickbl_mass = 0.05
+@export var min_pickbl_scl = 0.1
+@export var max_pickbl_scl = 5.0
 @export var gravity_modifier_amount = 1
-
 @export var throw_force_addition = 50
+@export var max_throw_force = 10.0
 var throw_force = 0.0
 
 func Pickup_pickable(pickable: Pickable):
@@ -63,8 +66,10 @@ func Freeze(what_to_freeze):
 	what_to_freeze.queue_free()
 
 func Resize_pickable(pickable: Pickable, mult: float):
+	pickable.mass = pickable.mass + mult * resize_amount if pickable.mass > min_pickbl_mass else pickable.mass
 	for c in pickable.get_children():
-		c.scale += Vector3.ONE * mult * resize_amount
+		if c.scale > Vector3.ONE * min_pickbl_scl and c.scale < Vector3.ONE * max_pickbl_scl:
+			c.scale += Vector3.ONE * mult * resize_amount
 
 func Modify_pickable_gravscl(pickable: Pickable, mult: float):
 	pickable.initl_grav_scl += mult * gravity_modifier_amount
@@ -91,7 +96,8 @@ func _unhandled_input(event):
 		Freeze(front_check.get_collider())
 
 	if event is InputEventKey and event.is_action_released("throw") and cur_pickable:
-		Throw_pickable(cur_pickable, (cur_pickable.position - cam.position) * throw_force)
+		throw_force = clamp(throw_force, 0.0, max_throw_force)
+		Throw_pickable(cur_pickable, (cur_pickable.position - cam.position) * throw_force * cur_pickable.mass)
 		throw_force = 0.0
 
 func _physics_process(delta):

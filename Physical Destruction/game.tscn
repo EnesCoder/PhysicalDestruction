@@ -81,3 +81,5 @@ speed = 4.0
 [node name="Entity3" parent="." instance=ExtResource("4_w34gt")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 11.8379, 0.100261, 11.6048)
 type = 2
+
+[editable path="Pickable2"]
